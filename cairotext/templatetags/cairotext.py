@@ -7,8 +7,9 @@ try:
     from hashlib import md5
 except ImportError:
     from md5 import md5
+import struct
 from urlparse import urljoin
-from os.path import join, abspath
+from os.path import join, abspath, exists
 from pprint import pformat
 import cairo
 
@@ -84,6 +85,27 @@ def convert_color(s):
         c.append(1)
     return tuple(c)
 
+def read_png_chunk(pngfile):
+    "Read a PNG chunk from the input file, return tag name and data."
+    # http://www.w3.org/TR/PNG/#5Chunk-layout
+    data_bytes, tag = struct.unpack('!I4s', pngfile.read(8))
+    data = pngfile.read(data_bytes)
+    return tag, data
+
+def get_png_size(filepath):
+    pngfile = file(filepath, 'rb')
+    signature = pngfile.read(8)
+    if (signature != struct.pack("8B", 137, 80, 78, 71, 13, 10, 26, 10)):
+        raise ValueError("Invalid PNG signature")
+    while True:
+        try:
+            tag, data = read_png_chunk(pngfile)
+        except ValueError, e:
+            raise ValueError('Invalid PNG file: ' + e.args[0])
+        if tag == 'IHDR': # http://www.w3.org/TR/PNG/#11IHDR
+            return struct.unpack("!2I5B", data)[:2]
+    raise ValueError('PNG header not found')
+
 def render_text(text, filepath, params):
     size = params.get('size', 18)
     weight = cairo.FONT_WEIGHT_NORMAL
@@ -157,10 +179,15 @@ class GetTextImageNode(Node):
         filename = '%s.%s' % (name, imgformat)
         fileurl = urljoin(settings.MEDIA_URL, join(render_dir, filename))
         filepath = join(settings.MEDIA_ROOT, render_dir, filename)
-        width, height = render_text(text, filepath, params)
+        size = None
+        if not exists(filepath):
+            size = render_text(text, filepath, params)
+        pngsize = get_png_size(filepath)
+        assert size is None or size == pngsize, \
+            'size mismatch: expected %rx%r, got %rx%r' % size+pngsize
 
         context[self.varname] = {'url': fileurl,
-                                 'width': width, 'height': height}
+                                 'width': pngsize[0], 'height': pngsize[1]}
         return ''
 
 def compile(parser, value):

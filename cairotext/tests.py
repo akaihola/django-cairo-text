@@ -128,6 +128,25 @@ class TemplateTagTestCase(TestCase):
                              hash='bc056ad38119a791d138e18623b73a50',
                              image_size=(36, 6))
 
+    def test_16_cache(self):
+        """
+        An existing file in the cache shouldn't be replaced.  Render some text
+        as an image, replace the cached file with another image, render again
+        and make sure the image wasn't overwritten by checking that the
+        appended byte is still there.
+        """
+        filepath1 = self.assertCairoText(
+            'Test text', delete=False,
+            hash='00fe21170617c1fde94d0113e26c7f7e',
+            image_size=(80, 13))
+        Image.new('RGBA', (10, 10)).save(filepath1)
+        filepath2 = self.assertCairoText(
+            'Test text', delete=False,
+            hash='a75d7d422fd00bf31208b013e74d8394',
+            image_size=(10, 10))
+        self.assertEqual(filepath1, filepath2)
+        remove(filepath2)
+
     def assertImageSize(self, filepath, size):
         img = Image.open(filepath)
         self.assertEqual(img.size, size)
@@ -136,9 +155,11 @@ class TemplateTagTestCase(TestCase):
         imghash = md5(Image.open(filepath).tostring()).hexdigest()
         self.assertEqual(imghash, hash)
 
-    def assertCairoText(self, text, hash, image_size, base='', **params):
-        for filepath in glob(join(CACHE_DIR, '*')):
-            remove(filepath)
+    def assertCairoText(self, text, hash, image_size, base='', delete=True,
+                        **params):
+        if delete:
+            for filepath in glob(join(CACHE_DIR, '*')):
+                remove(filepath)
         paramstr = ' '.join('%s %s' % (key, quote(val))
                             for key, val in params.items())
         template_string = (
@@ -153,4 +174,7 @@ class TemplateTagTestCase(TestCase):
         filepath = join(settings.MEDIA_ROOT, path)
         self.assertImageSize(filepath, image_size)
         self.assertImageFingerprint(filepath, hash)
-        remove(filepath)
+        if delete:
+            remove(filepath)
+        else:
+            return filepath
