@@ -71,39 +71,39 @@ class TemplateTagTestCase(TestCase):
                              hash='d026d70faf9ccfbaf46f69ece5497ed2',
                              image_size=(80, 20))
 
-    def test_06_y(self):
-        self.assertCairoText('Test text', height=20, y=15,
+    def test_06_baseline(self):
+        self.assertCairoText('Test text', height=20, baseline=15,
                              hash='ef07950cde55c1a371a7b13a954a1e9f',
                              image_size=(80, 20))
 
     def test_07_font1(self):
         self.assertCairoText('ÄIBÖ'.decode('UTF-8'), font='Serif',
-                             height=19, y=15,
+                             height=19, baseline=15,
                              hash='51a648393678504100249d26a46228ce',
                              image_size=(48, 19))
 
     def test_08_font2(self):
         self.assertCairoText('AIBO', font='Serif',
-                             height=19, y=15,
+                             height=19, baseline=15,
                              hash='e0ed3c72f26e2d174fa4296d99676d87',
                              image_size=(48, 19))
 
     def test_09_font3(self):
         self.assertCairoText('AIJO', font='Serif',
-                             height=19, y=15,
+                             height=19, baseline=15,
                              hash='519ae8585da4a569869d122bbe6b5f15',
                              image_size=(42, 19))
 
     def test_10_font4(self):
         self.assertCairoText('ÄIJÖ'.decode('UTF-8'), font='Frutiger LT Std',
-                             height=19, y=15, size=12,
+                             height=19, baseline=15, size=12,
                              color='#fff', background='#b5b5b5',
                              hash='d0c933357a1723b9c07da6b3da98248d',
                              image_size=(24, 19))
 
     def test_11_multiple(self):
         self.assertCairoText('ÄIJÖ'.decode('UTF-8'), font='Serif',
-                             height=19, y=15, size=12,
+                             height=19, baseline=15, size=12,
                              color='#fff', background='#b5b5b5',
                              hash='184bcf51e19d4e48d198ef6381e86821',
                              image_size=(27, 19))

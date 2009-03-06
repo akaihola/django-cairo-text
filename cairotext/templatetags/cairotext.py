@@ -16,7 +16,7 @@ import cairo
 from django.conf import settings
 
 PARAM_KEYWORDS = set(
-    ['font', 'size', 'y', 'height', 'color', 'background'])
+    ['font', 'size', 'baseline', 'height', 'color', 'background'])
 
 _colors = {
     'aliceblue':'#f0f8ff','antiquewhite':'#faebd7','aqua':'#00ffff',
@@ -118,7 +118,7 @@ def render_text(text, filepath, params):
     context.set_font_size(size)
     extents = context.text_extents(text)
     x = -extents[0]
-    y = params.get('y', -extents[1])
+    baseline = params.get('baseline', -extents[1])
     width = extents[2]
     height = params.get('height', extents[3])
 
@@ -138,7 +138,7 @@ def render_text(text, filepath, params):
     context.select_font_face(font, style, weight)
     context.set_font_size(size)
     # We need to adjust by the text's offsets to center it.
-    context.move_to(x, y)
+    context.move_to(x, baseline)
     # We stroke and fill to make sure thinner parts are visible.
     context.text_path(text)
     #context.set_line_width(0.05)
