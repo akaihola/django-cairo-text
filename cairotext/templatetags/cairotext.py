@@ -16,7 +16,7 @@ import cairo
 from django.conf import settings
 
 PARAM_KEYWORDS = set(
-    ['font', 'size', 'y', 'height', 'color', 'background', 'format'])
+    ['font', 'size', 'y', 'height', 'color', 'background'])
 
 _colors = {
     'aliceblue':'#f0f8ff','antiquewhite':'#faebd7','aqua':'#00ffff',
@@ -175,8 +175,7 @@ class GetTextImageNode(Node):
         text = self.text.resolve(context)
         name = md5(text.encode('UTF-8') + pformat(params)).hexdigest()
         render_dir = getattr(settings, 'CAIROTEXT_DIR', 'cairotext_cache')
-        imgformat = params.pop('format', 'png')
-        filename = '%s.%s' % (name, imgformat)
+        filename = '%s.png' % name
         fileurl = urljoin(settings.MEDIA_URL, join(render_dir, filename))
         filepath = join(settings.MEDIA_ROOT, render_dir, filename)
         size = None

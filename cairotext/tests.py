@@ -101,34 +101,29 @@ class TemplateTagTestCase(TestCase):
                              hash='d0c933357a1723b9c07da6b3da98248d',
                              image_size=(24, 19))
 
-    def test_11_format(self):
-        self.assertCairoText('Test text', format='gif',
-                             hash='00fe21170617c1fde94d0113e26c7f7e',
-                             image_size=(80, 13))
-
-    def test_12_multiple(self):
+    def test_11_multiple(self):
         self.assertCairoText('ÄIJÖ'.decode('UTF-8'), font='Serif',
                              height=19, y=15, size=12,
                              color='#fff', background='#b5b5b5',
                              hash='184bcf51e19d4e48d198ef6381e86821',
                              image_size=(27, 19))
 
-    def test_13_missing_base_settings(self):
+    def test_12_missing_base_settings(self):
         self.assertRaises(KeyError,
                           self.assertCairoText,
                           'text', base='"dummy"', hash='', image_size=())
 
-    def test_14_base_settings(self):
+    def test_13_base_settings(self):
         self.assertCairoText('Test text', base='"fancy"',
                              hash='ed88e6b683afd6fd6c0caa16776fd36d',
                              image_size=(179, 29))
 
-    def test_15_base_settings_override(self):
+    def test_14_base_settings_override(self):
         self.assertCairoText('Test text', base='"fancy"', size=8,
                              hash='bc056ad38119a791d138e18623b73a50',
                              image_size=(36, 6))
 
-    def test_16_cache(self):
+    def test_15_cache(self):
         """
         An existing file in the cache shouldn't be replaced.  Render some text
         as an image, replace the cached file with another image, render again
