@@ -166,7 +166,7 @@ class GetTextImageNode(Node):
         if isinstance(params, basestring):
             try:
                 presets = settings.CAIROTEXT_PRESETS
-                params = presets[params]
+                params = dict(presets[params])
             except (AttributeError, KeyError):
                 raise KeyError('Preset "%s" not found in '
                                'settings.CAIROTEXT_PRESETS' % params)
