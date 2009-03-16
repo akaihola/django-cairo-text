@@ -2,10 +2,11 @@
  Change log for django-cairo-text
 ==================================
 
----------------------------
-Release 1.1: in development
----------------------------
+-----------------------
+Release 1.1: 2009-03-16
+-----------------------
 
+* added support for external image optimizers
 * added support for embedding base64 encoded images in <IMG> tags
 * template tag returns a ``TextImage`` instance instead of a dict
 

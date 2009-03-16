@@ -54,7 +54,8 @@ class TemplateTagTestCase(TestCase):
     def test_02_size(self):
         self.assertCairoText('Test text', size=20,
                              hash='bc35d3f66298f31363d56c5dd10c29ea',
-                             image_size=(87, 15))
+                             image_size=(87, 15),
+                             filesize=961)
 
     def test_03_color(self):
         self.assertCairoText('Test text', color='#5a5a63',
@@ -167,6 +168,18 @@ class TemplateTagTestCase(TestCase):
             u'Tqdt3o/zN0UNzMzUv9N1AAAAAElFTkSuQmCC" width="35" height="13" />')
         remove(path)
 
+    def test_17_optimize(self):
+        settings.CAIROTEXT_OPTIMIZER = 'pngnq -n 4 %(path)s'
+        settings.CAIROTEXT_OPTIMIZED_PATH = '%(directory)s/%(name)s-nq8.png'
+        try:
+            self.assertCairoText('Test text', size=20,
+                                 hash='dae8857d033198914b596d4869a3106c',
+                                 image_size=(87, 15),
+                                 filesize=281L)
+        except OSError, e:
+            if e.args != (2, 'No such file or directory'):
+                raise
+
     def assertImageSize(self, filepath, size):
         img = Image.open(filepath)
         self.assertEqual(img.size, size)
@@ -175,7 +188,10 @@ class TemplateTagTestCase(TestCase):
         imghash = md5(Image.open(filepath).tostring()).hexdigest()
         self.assertEqual(imghash, hash)
 
-    def assertCairoText(self, text, hash, image_size, base='', delete=True,
+    def assertFileSize(self, filepath, size):
+        self.assertEqual(getsize(filepath), size)
+
+    def assertCairoText(self, text, hash, image_size, base='', delete=True, filesize=None,
                         **params):
         if delete:
             for filepath in glob(join(CACHE_DIR, '*')):
@@ -195,6 +211,8 @@ class TemplateTagTestCase(TestCase):
         filepath = join(settings.MEDIA_ROOT, path)
         self.assertImageSize(filepath, image_size)
         self.assertImageFingerprint(filepath, hash)
+        if filesize is not None:
+            self.assertFileSize(filepath, filesize)
         if delete:
             remove(filepath)
         else:

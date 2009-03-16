@@ -9,8 +9,10 @@ except ImportError:
     from md5 import md5
 import struct
 from urlparse import urljoin
-from os.path import join, abspath, exists
+from os import remove, rename
+from os.path import join, abspath, exists, split
 from pprint import pformat
+from subprocess import call
 import cairo
 
 from django.conf import settings
@@ -147,6 +149,16 @@ def render_text(text, filepath, params):
 
     try:
         surface.write_to_png(filepath)
+        optimizer = getattr(settings, 'CAIROTEXT_OPTIMIZER', None)
+        optimized_path = getattr(settings, 'CAIROTEXT_OPTIMIZED_PATH', None)
+        if optimizer and optimized_path:
+            directory, filename = split(filepath)
+            name, ext = filename.rsplit('.', 1)
+            params = dict(path=filepath, directory=directory,
+                          name=name, ext=ext)
+            call(optimizer % params, shell=True)
+            remove(filepath)
+            rename(optimized_path % params, filepath)
     except IOError:
         raise IOError("Can't save image in %r" % abspath(filepath))
     surface.finish()

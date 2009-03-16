@@ -192,6 +192,44 @@ to be rendered.  Options can still be overridden::
 
 This would render green 14px Frutiger on a gray background.
 
+Image optimization
+------------------
+
+You might want to optimize the size of generated PNG files in order to
+minimize network traffic.  An external optimizer utility can be called
+automatically for each generated image.  Two settings have to be
+defined:
+
+* CAIROTEXT_OPTIMIZER defines the command line for the optimizer
+  binary
+
+* CAIROTEXT_OPTIMIZED_PATH defines where the optimizer saves the
+  optimized image
+
+Both settings can contain Python-style named string formatting
+specifiers which refer to the following values:
+
+* ``%(path)s``: full path of the final PNG file
+
+* ``%(directory)s``: path of the directory where the PNG is to be
+  saved
+
+* ``%(name)s``: image name without the extension
+
+* ``%(ext)s``: always 'png'
+
+An example::
+
+  CAIROTEXT_OPTIMIZER = 'pngnq -s 4 %(path)s'
+  CAIROTEXT_OPTIMIZED_PATH = '%(directory)s/%(name)s-nq8.png'
+
+With these settings, Cairotext would optimize each generated file
+using the pngnq_ optimizer.  Image color depth would be reduced to
+four bits.  This method reduced average image sizes to 26% of original
+on one site.
+
+.. _pngnq: http://pngnq.sourceforge.net/
+
 
 Related apps and blog posts
 ===========================
