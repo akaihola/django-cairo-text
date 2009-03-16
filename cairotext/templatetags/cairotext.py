@@ -153,6 +153,12 @@ def render_text(text, filepath, params):
 
     return int(width), int(height)
 
+class TextImage(object):
+    def __init__(self, url, path, size):
+        self.url = url
+        self.path = path
+        self.width, self.height = size
+
 class GetTextImageNode(Node):
     def __init__(self, base_params, text, overrides, varname):
         self.base_params = base_params
@@ -185,8 +191,7 @@ class GetTextImageNode(Node):
         assert size is None or size == pngsize, \
             'size mismatch: expected %rx%r, got %rx%r' % size+pngsize
 
-        context[self.varname] = {'url': fileurl,
-                                 'width': pngsize[0], 'height': pngsize[1]}
+        context[self.varname] = TextImage(fileurl, filepath, pngsize)
         return ''
 
 def compile(parser, value):

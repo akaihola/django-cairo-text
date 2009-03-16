@@ -2,6 +2,12 @@
  Change log for django-cairo-text
 ==================================
 
+---------------------------
+Release 1.1: in development
+---------------------------
+
+* template tag returns a ``TextImage`` instance instead of a dict
+
 -----------------------
 Release 1.0: 2009-03-06
 -----------------------
