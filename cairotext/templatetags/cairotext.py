@@ -158,6 +158,12 @@ class TextImage(object):
         self.url = url
         self.path = path
         self.width, self.height = size
+    def _embed(self):
+        if not hasattr(self, '_base64'):
+            self._base64 = ('data:image/png;base64,%s' %
+                            file(self.path).read().encode('base64')[:-1])
+        return self._base64
+    embed = property(_embed)
 
 class GetTextImageNode(Node):
     def __init__(self, base_params, text, overrides, varname):

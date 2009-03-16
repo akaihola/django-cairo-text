@@ -6,6 +6,7 @@
 Release 1.1: in development
 ---------------------------
 
+* added support for embedding base64 encoded images in <IMG> tags
 * template tag returns a ``TextImage`` instance instead of a dict
 
 -----------------------

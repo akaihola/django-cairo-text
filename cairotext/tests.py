@@ -142,6 +142,31 @@ class TemplateTagTestCase(TestCase):
         self.assertEqual(filepath1, filepath2)
         remove(filepath2)
 
+    def test_16_embed(self):
+        template_string = (
+            '{% load cairotext %}'
+            '{% get_text_image "text" as i %}'
+            '<!-- {{i.path}} -->'
+            '<img src="{{i.embed}}" width="{{i.width}}" height="{{i.height}}" />')
+        template = Template(template_string)
+        result = template.render(Context())
+        path, img_tag = result[5:].split(' -->')
+        self.assertEqual(
+            img_tag,
+            u'<img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACMAAAANCAYAAAAjf9cfAAAABmJLR0QA/wD/AP+gvaeTAAACQ0lE\n'
+            u'QVQ4jc2TMUvyURTGn/uaLkE0SAQmDg4OhURWU0NfIVCk+gYtITT4DfoAbdoiFEJtLbUEDSHUFM7S\n'
+            u'5pBSGpKi/f3/3iG89M+/ve+7xPvAGe45557n4bn3GABjjCQJ0E/Bj/PXj7H/Bf4vMSO7pA/rRjEC\n'
+            u'oJOTE21ubmp2dlbBYFDxeFwHBwdqt9u2b3t7W8YYJZNJua5r867rKplMyhij3d1dyzOJE78AcF2X\n'
+            u'nZ0d37okFhcXabfbADw/PxOJRJBEuVxmhHK5jCRisRitVgs+Pol/fC5+RaFQQBILCwucnZ3RaDTo\n'
+            u'9XpUKhVSqRSSyOfztv/q6gpjDIlEAsdxcByHRCJBIBDg5ubGM9uP81sx6+vrSOL29nasVqvVkEQ8\n'
+            u'Hvfk9/b2kESpVKJUKo0J/k6MgcmrPT09rW63++2nC4VC6vf79vz29qbl5WU7a2ZmRnd3dwoGg557\n'
+            u'/7zaX8X5YTAYeM6dTkcvLy96f39Xs9lUvV7X6+vrH+eMCJmamkISjuN4bFtdXUUS9/f3YzZPwtbW\n'
+            u'ln2mw8NDJJHNZsf6/DgFEI1GkcTl5SXD4dAWj4+PkcT8/DzFYpHHx0e63S6tVouHhweOjo5IpVK2\n'
+            u'f7Q5S0tLDIdDer0esVgMSZyfn3vE+HEKIJPJTFzt/f39yav4qffp6YlwOIwkLi4uLOnp6SmSmJub\n'
+            u'o9ls2rwfpwDq9TqZTIZoNGrt+4zr62tbD4VChMNhVlZWyOVyVKtVANLpNJLY2Njw3HVdl7W1NSSR\n'
+            u'Tqdt3o/zN0UNzMzUv9N1AAAAAElFTkSuQmCC" width="35" height="13" />')
+        remove(path)
+
     def assertImageSize(self, filepath, size):
         img = Image.open(filepath)
         self.assertEqual(img.size, size)
@@ -160,12 +185,13 @@ class TemplateTagTestCase(TestCase):
         template_string = (
             '{%% load cairotext %%}'
             '{%% get_text_image "%s" %s %s as i %%}'
+            '<!-- {{i.path}} -->'
             '<img src="{{i.url}}"'
             ' width="{{i.width}}"'
             ' height="{{i.height}}" />' % (text, base, paramstr))
         template = Template(template_string)
         result = template.render(Context())
-        path = result[17:69]
+        path = result[5:].split(' -->')[0]
         filepath = join(settings.MEDIA_ROOT, path)
         self.assertImageSize(filepath, image_size)
         self.assertImageFingerprint(filepath, hash)

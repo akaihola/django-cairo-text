@@ -4,9 +4,10 @@
 
 This is a re-usable Django app for using custom fonts on a web page
 for headings, navigation and the like.  It uses the Cairo graphics
-library to create images dynamically out of text snippets and caches
-them.  Currently output in the PNG format is possible since that's all
-Cairo supports.
+library to create images dynamically out of text snippets.  Currently
+output in the PNG format is possible since that's all Cairo supports.
+You can create ``<img>`` tags which either link to cached image files
+or embed encoded image data in the ``src=`` attribute.
 
 
 Downloads
@@ -32,7 +33,11 @@ URL and pixel size in the context::
 
   {% load cairotext %}
   {% get_text_image myvar font "Arial" color "#ab3fd0" size 14 as img %}
+  Image retrieved with a separate request:
   <img src="{{img.url}}" alt="{{myvar}}"
+       width="{{img.width}}" height="{{img.height}}" />
+  Image data embedded in HTML:
+  <img src="{{img.embed}}" alt="{{myvar}}"
        width="{{img.width}}" height="{{img.height}}" />
 
 You can use the following keywords to customize the appearance of the
@@ -117,11 +122,18 @@ You can also specify the background color::
   
   {% get_text_image "Hello there!" font "jiffy" color "#0f0" background "black" as img %}
 
-The template tag returns an image information dictionary like this::
+The template tag returns an image object with attributes like this::
 
-  img == {'url': '/media/cairotext_cache/41f97f2c80e9c581c9fa85ca4efda8d9.png',
-          'width': 120,
-          'height': 61}
+  img.url == '/media/cairotext_cache/ba5bfc5b16f25c44bd242230056be56b.png'
+  img.embed == (
+    'data:image/png;base64,'
+    'iVBORw0KGgoAAAANSUhEUgAAAFUAAAAJCAMAAAB0Z5DkAAAAGFBMVEX+/v7+/v79/f3t7e3Hx8eZ\n'
+    'mZlSUlIdHR3QDIZLAAAAi0lEQVQoz7VS0Q6DQAgjetD//2OBAjExbkucPFDo2Sp4In8IXBmPF1y/\n'
+    'nD9xBUwM+d0KqMCCz1KjVhLdJO3JOKeTOjpiOUGyq5VgbTLlqhTMNGjJsKUjDr2pdzsNa4Isb1zj\n'
+    'LCScF6MjhrXFYNyCrHkXy5sN8DGXtGvr1o+/X9HphI/vTSyvNjj4OQ72GgXnYsLNkAAAAABJRU5E\n'
+    'rkJggg==')
+  img.width == 85
+  img.height == 9
 
 Bold or italic text is not directly supported - I haven't looked into
 such features in Cairo yet.  You can of course use a bold or italic
