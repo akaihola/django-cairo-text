@@ -224,9 +224,10 @@ An example::
   CAIROTEXT_OPTIMIZED_PATH = '%(directory)s/%(name)s-nq8.png'
 
 With these settings, Cairotext would optimize each generated file
-using the pngnq_ optimizer.  Image color depth would be reduced to
-four bits.  This method reduced average image sizes to 26% of original
-on one site.
+using the pngnq_ optimizer.  The color palette of the image would be
+reduced to four colors.  On one site, this method reduced average
+image sizes to 26% of original while still resulting in acceptable
+quality.
 
 .. _pngnq: http://pngnq.sourceforge.net/
 
