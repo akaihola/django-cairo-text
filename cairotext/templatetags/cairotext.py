@@ -207,7 +207,7 @@ class GetTextImageNode(Node):
             size = render_text(text, filepath, params)
         pngsize = get_png_size(filepath)
         assert size is None or size == pngsize, \
-            'size mismatch: expected %rx%r, got %rx%r' % size+pngsize
+            'size mismatch: expected %rx%r, got %rx%r' % (size+pngsize)
 
         context[self.varname] = TextImage(fileurl, filepath, pngsize)
         return ''
