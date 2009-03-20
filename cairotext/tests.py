@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from os import remove, rmdir
-from os.path import exists, join, getsize
+from os.path import exists, join, getsize, dirname
 from glob import glob
 from tempfile import mkdtemp
 try:
@@ -10,9 +10,12 @@ except ImportError:
 
 from django.test import TestCase
 from django.conf import settings
+from django.core import mail
 from django.template import Template, Context
 import Image
-from cairotext.templatetags.cairotext import render_text
+from cairotext.templatetags.cairotext import \
+    render_text, Optimizer, OptimizerError
+from cairotext.test_optimizer import TEST_IMAGE
 
 CACHE_DIR = join(settings.MEDIA_ROOT, 'cairotext_cache')
 
@@ -168,7 +171,7 @@ class TemplateTagTestCase(TestCase):
             u'Tqdt3o/zN0UNzMzUv9N1AAAAAElFTkSuQmCC" width="35" height="13" />')
         remove(path)
 
-    def test_17_optimize(self):
+    def test_17_pngnq(self):
         settings.CAIROTEXT_OPTIMIZER = 'pngnq -n 4 %(path)s'
         settings.CAIROTEXT_OPTIMIZED_PATH = '%(directory)s/%(name)s-nq8.png'
         try:
@@ -176,9 +179,74 @@ class TemplateTagTestCase(TestCase):
                                  hash='dae8857d033198914b596d4869a3106c',
                                  image_size=(87, 15),
                                  filesize=281L)
+            self.assertEqual(len(mail.outbox), 0)
         except OSError, e:
             if e.args != (2, 'No such file or directory'):
                 raise
+        self.reset_optimizer_settings()
+
+    def test_18_optimize(self):
+        self.set_test_optimizer_settings()
+        self.assertCairoText('text', size=18,
+                             hash='885fd961af65b1f31c08c3f4942884fd',
+                             image_size=(35, 13),
+                             filesize=654L)
+        self.assertEqual(len(mail.outbox), 0)
+        self.reset_optimizer_settings()
+
+    def test_19_optimize_fail(self):
+        self.set_test_optimizer_settings('-f')
+        self.assertCairoText('text', size=18,
+                             hash='885fd961af65b1f31c08c3f4942884fd',
+                             image_size=(35, 13),
+                             filesize=654L)
+        self.assertEqual(len(mail.outbox), 1)
+        m = mail.outbox[0]
+        self.assertEqual(
+            m.subject, '[Django] Cairotext external optimizer failure')
+        self.assertEqual(
+            m.body,
+            'Original PNG path: media/cairotext_cache/'
+            '47ce8fb8dc6517ea07aaede77935703a.png\n'
+            'Optimized PNG path: media/cairotext_cache/'
+            '47ce8fb8dc6517ea07aaede77935703a-optimized.png\n'
+            'Optimizer command line:'
+            ' python ../cairotext/test_optimizer.py -f'
+            ' media/cairotext_cache/47ce8fb8dc6517ea07aaede77935703a.png\n'
+            'Optimizer return value: 1\n')
+        self.reset_optimizer_settings()
+
+    def test_20_optimize_missing(self):
+        self.set_test_optimizer_settings('-n')
+        self.assertCairoText('text', size=18,
+                             hash='885fd961af65b1f31c08c3f4942884fd',
+                             image_size=(35, 13),
+                             filesize=654L)
+        self.assertEqual(len(mail.outbox), 1)
+        m = mail.outbox[0]
+        self.assertEqual(
+            m.subject, '[Django] Cairotext optimized image missing')
+        self.assertEqual(
+            m.body,
+            'Original PNG path: media/cairotext_cache/'
+            '47ce8fb8dc6517ea07aaede77935703a.png\n'
+            'Optimized PNG path: media/cairotext_cache/'
+            '47ce8fb8dc6517ea07aaede77935703a-optimized.png\n'
+            'Optimizer command line:'
+            ' python ../cairotext/test_optimizer.py -n'
+            ' media/cairotext_cache/47ce8fb8dc6517ea07aaede77935703a.png\n'
+            'Optimizer return value: 0\n')
+        self.reset_optimizer_settings()
+
+    def set_test_optimizer_settings(self, options=''):
+        settings.CAIROTEXT_OPTIMIZER = 'python %s %s %%(path)s' % (
+            '../cairotext/test_optimizer.py', options)
+        settings.CAIROTEXT_OPTIMIZED_PATH = (
+            '%(directory)s/%(name)s-optimized.png')
+
+    def reset_optimizer_settings(self):
+        settings.CAIROTEXT_OPTIMIZER = None
+        settings.CAIROTEXT_OPTIMIZED_PATH = None
 
     def assertImageSize(self, filepath, size):
         img = Image.open(filepath)
@@ -191,8 +259,8 @@ class TemplateTagTestCase(TestCase):
     def assertFileSize(self, filepath, size):
         self.assertEqual(getsize(filepath), size)
 
-    def assertCairoText(self, text, hash, image_size, base='', delete=True, filesize=None,
-                        **params):
+    def assertCairoText(self, text, hash, image_size, base='', delete=True,
+                        filesize=None, **params):
         if delete:
             for filepath in glob(join(CACHE_DIR, '*')):
                 remove(filepath)
@@ -208,7 +276,7 @@ class TemplateTagTestCase(TestCase):
         template = Template(template_string)
         result = template.render(Context())
         path = result[5:].split(' -->')[0]
-        filepath = join(settings.MEDIA_ROOT, path)
+        filepath = path
         self.assertImageSize(filepath, image_size)
         self.assertImageFingerprint(filepath, hash)
         if filesize is not None:
@@ -217,3 +285,90 @@ class TemplateTagTestCase(TestCase):
             remove(filepath)
         else:
             return filepath
+
+class OptimizerTestCase(TestCase):
+
+    def setUp(self):
+        settings.CAIROTEXT_OPTIMIZER = (
+            'python ../cairotext/test_optimizer.py %(path)s')
+        settings.CAIROTEXT_OPTIMIZED_PATH = (
+            '%(directory)s/%(name)s-optimized.png')
+
+    def tearDown(self):
+        settings.CAIROTEXT_OPTIMIZER = None
+        settings.CAIROTEXT_OPTIMIZED_PATH = None
+
+    def test_01_params(self):
+        o = Optimizer()
+        params = o.get_params_for('/absolute/path/filename.png')
+        self.assertEqual(params, {'directory': '/absolute/path',
+                                  'path': '/absolute/path/filename.png',
+                                  'ext': 'png',
+                                  'name': 'filename'})
+
+    def test_02_error(self):
+        o = Optimizer()
+        o.filepath = '/absolute/path/filename.png'
+        params = o.get_params_for(o.filepath)
+        o.cmdline = o.cmdline_template % params
+        o.dest_path = o.dest_path_template % params
+        o.retval = 1
+        o.stdout = 'test stdout content\n'
+        o.stderr = 'test stderr content\n'
+        o.error('test subject')
+        self.assertEqual(len(mail.outbox), 1)
+        m = mail.outbox[0]
+        self.assertEqual(
+            m.subject, '[Django] test subject')
+        self.assertEqual(
+            m.body,
+            'Original PNG path: /absolute/path/filename.png\n'
+            'Optimized PNG path: /absolute/path/filename-optimized.png\n'
+            'Optimizer command line:'
+            ' python ../cairotext/test_optimizer.py'
+            ' /absolute/path/filename.png\n'
+            'Optimizer return value: 1\n'
+            'test stdout content\n'
+            'test stderr content\n')
+
+    def test_03_error_debug(self):
+        settings.DEBUG = True
+        o = Optimizer()
+        o.filepath = '/absolute/path/filename.png'
+        params = o.get_params_for(o.filepath)
+        o.cmdline = o.cmdline_template % params
+        o.dest_path = o.dest_path_template % params
+        o.retval = 1
+        o.stdout = 'test stdout content\n'
+        o.stderr = 'test stderr content\n'
+        try:
+            o.error('test subject')
+            self.fail('o.error did not raise exception')
+        except Exception, e:
+            assert isinstance(e, OptimizerError), e
+            self.assertEquals(
+                e.message,
+                'Original PNG path: /absolute/path/filename.png\n'
+                'Optimized PNG path: /absolute/path/filename-optimized.png\n'
+                'Optimizer command line:'
+                ' python ../cairotext/test_optimizer.py'
+                ' /absolute/path/filename.png\n'
+                'Optimizer return value: 1\n'
+                'test stdout content\n'
+                'test stderr content\n')
+        self.assertEqual(len(mail.outbox), 0)
+        settings.DEBUG = False
+
+    def test_04_optimizer_enabled(self):
+        self.assert_(Optimizer().is_enabled())
+
+    def test_05_optimize(self):
+        directory = mkdtemp()
+        filepath = join(directory, 'test.png')
+        file(filepath, 'w').write('dummy')
+        o = Optimizer()
+        o.optimize(filepath)
+        self.assertEqual(len(mail.outbox), 0)
+        self.assertEquals(file(filepath).read(), TEST_IMAGE)
+        remove(filepath)
+        rmdir(directory)

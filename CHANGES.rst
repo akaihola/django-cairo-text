@@ -2,6 +2,15 @@
  Change log for django-cairo-text
 ==================================
 
+-----------------------------
+Release 1.1.1: in development
+-----------------------------
+
+* a failing optimizer now sends e-mail (production mode) or raises an
+  exception (debug mode)
+* bugfix: fixed string format in the size mismatch exception message
+* minor documentation fix
+
 -----------------------
 Release 1.1: 2009-03-16
 -----------------------

@@ -229,6 +229,13 @@ reduced to four colors.  On one site, this method reduced average
 image sizes to 26% of original while still resulting in acceptable
 quality.
 
+If the external optimizer returns a non-zero value to indicate an
+error, outputs any text on the standard output or standard error
+devices or fails to create the optimized image, Cairotext will report
+the incident to the site administrators (as set with
+``settings.ADMINS``) by e-mail.  In debug mode no e-mail is sent and
+an exception is raised instead.
+
 .. _pngnq: http://pngnq.sourceforge.net/
 
 

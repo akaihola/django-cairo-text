@@ -2,6 +2,7 @@ from django import template
 register = template.Library()
 
 from django.template import Node, TemplateSyntaxError, Variable
+from django.core.mail import mail_admins
 
 try:
     from hashlib import md5
@@ -12,7 +13,7 @@ from urlparse import urljoin
 from os import remove, rename
 from os.path import join, abspath, exists, split
 from pprint import pformat
-from subprocess import call
+from subprocess import Popen, PIPE
 import cairo
 
 from django.conf import settings
@@ -149,21 +150,65 @@ def render_text(text, filepath, params):
 
     try:
         surface.write_to_png(filepath)
-        optimizer = getattr(settings, 'CAIROTEXT_OPTIMIZER', None)
-        optimized_path = getattr(settings, 'CAIROTEXT_OPTIMIZED_PATH', None)
-        if optimizer and optimized_path:
-            directory, filename = split(filepath)
-            name, ext = filename.rsplit('.', 1)
-            params = dict(path=filepath, directory=directory,
-                          name=name, ext=ext)
-            call(optimizer % params, shell=True)
-            remove(filepath)
-            rename(optimized_path % params, filepath)
+        optimizer = Optimizer()
+        if optimizer.is_enabled():
+            optimizer.optimize(filepath)
     except IOError:
         raise IOError("Can't save image in %r" % abspath(filepath))
     surface.finish()
 
     return int(width), int(height)
+
+class OptimizerError(Exception): pass
+
+class Optimizer(object):
+    def __init__(self):
+        self.cmdline_template = getattr(
+            settings, 'CAIROTEXT_OPTIMIZER', None)
+        self.dest_path_template = getattr(
+            settings, 'CAIROTEXT_OPTIMIZED_PATH', None)
+
+    def is_enabled(self):
+        return self.cmdline_template and self.dest_path_template
+
+    def optimize(self, filepath):
+        self.filepath = filepath
+        params = self.get_params_for(filepath)
+        self.cmdline = self.cmdline_template % params
+        self.dest_path = self.dest_path_template % params
+        process = Popen(self.cmdline, shell=True, stdout=PIPE, stderr=PIPE)
+        self.stdout, self.stderr = process.stdout.read(), process.stderr.read()
+        self.retval = process.wait()
+        if self.retval:
+            self.error('Cairotext external optimizer failure')
+        elif not exists(self.dest_path):
+            self.error('Cairotext optimized image missing')
+        elif self.stdout or self.stderr:
+            self.error('Cairotext optimizer output')
+        if exists(self.dest_path):
+            # os.rename overwrites existing destination
+            rename(self.dest_path, filepath)
+
+    def get_params_for(self, filepath):
+        directory, filename = split(filepath)
+        name, ext = filename.rsplit('.', 1)
+        return {'path': filepath,
+                'directory': directory,
+                'name': name,
+                'ext': ext}
+
+    def error(self, subject):
+        message = (
+            'Original PNG path: %s\n'
+            'Optimized PNG path: %s\n'
+            'Optimizer command line: %s\n'
+            'Optimizer return value: %d\n%s%s' % (
+                self.filepath, self.dest_path, self.cmdline,
+                self.retval, self.stdout, self.stderr))
+        if settings.DEBUG:
+            raise OptimizerError(message)
+        else:
+            mail_admins(subject, message, fail_silently=True)
 
 class TextImage(object):
     def __init__(self, url, path, size):
