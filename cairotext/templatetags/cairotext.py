@@ -153,8 +153,8 @@ def render_text(text, filepath, params):
         optimizer = Optimizer()
         if optimizer.is_enabled():
             optimizer.optimize(filepath)
-    except IOError:
-        raise IOError("Can't save image in %r" % abspath(filepath))
+    except IOError, e:
+        raise IOError("Can't save image in %r: %s" % (abspath(filepath), e.message))
     surface.finish()
 
     return int(width), int(height)
