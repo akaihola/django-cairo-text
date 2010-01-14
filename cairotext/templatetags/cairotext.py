@@ -148,13 +148,16 @@ def render_text(text, filepath, params):
     #context.stroke_preserve()
     context.fill()
 
+    filepath = abspath(filepath)
     try:
         surface.write_to_png(filepath)
-        optimizer = Optimizer()
-        if optimizer.is_enabled():
-            optimizer.optimize(filepath)
     except IOError, e:
-        raise IOError("Can't save image in %r: %s" % (abspath(filepath), e))
+        raise IOError("Can't save image in %r: %s\n"
+                      "Text: %r\n"
+                      "Parameters: %r" % (filepath, e, text, params))
+    optimizer = Optimizer()
+    if optimizer.is_enabled():
+        optimizer.optimize(filepath)
     surface.finish()
 
     return int(width), int(height)
