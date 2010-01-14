@@ -122,8 +122,8 @@ def render_text(text, filepath, params):
     extents = context.text_extents(text)
     x = -extents[0]
     baseline = params.get('baseline', -extents[1])
-    width = extents[2]
-    height = params.get('height', extents[3])
+    width = max(1, extents[2])
+    height = max(1, params.get('height', extents[3]))
 
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, int(width), int(height))
     font_options = surface.get_font_options()
