@@ -187,7 +187,8 @@ class Optimizer(object):
         elif not exists(self.dest_path):
             self.error('Cairotext optimized image missing')
         elif self.stdout or self.stderr:
-            self.error('Cairotext optimizer output')
+            if not self.stderr.startswith('libpng warning: '):
+                self.error('Cairotext optimizer output')
         if exists(self.dest_path):
             # os.rename overwrites existing destination
             rename(self.dest_path, filepath)
