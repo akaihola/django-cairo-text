@@ -122,8 +122,8 @@ def render_text(text, filepath, params):
     extents = context.text_extents(text)
     x = -extents[0]
     baseline = params.get('baseline', -extents[1])
-    width = extents[2]
-    height = params.get('height', extents[3])
+    width = max(1, extents[2])
+    height = max(1, params.get('height', extents[3]))
 
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, int(width), int(height))
     font_options = surface.get_font_options()
@@ -148,13 +148,16 @@ def render_text(text, filepath, params):
     #context.stroke_preserve()
     context.fill()
 
+    filepath = abspath(filepath)
     try:
         surface.write_to_png(filepath)
-        optimizer = Optimizer()
-        if optimizer.is_enabled():
-            optimizer.optimize(filepath)
-    except IOError:
-        raise IOError("Can't save image in %r" % abspath(filepath))
+    except IOError, e:
+        raise IOError("Can't save image in %r: %s\n"
+                      "Text: %r\n"
+                      "Parameters: %r" % (filepath, e, text, params))
+    optimizer = Optimizer()
+    if optimizer.is_enabled():
+        optimizer.optimize(filepath)
     surface.finish()
 
     return int(width), int(height)
